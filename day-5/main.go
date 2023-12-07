@@ -81,7 +81,7 @@ func partOne() {
 }
 
 func partTwo() {
-	f, err := os.Open("test.txt")
+	f, err := os.Open("input.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -144,35 +144,78 @@ func partTwo() {
 	// 	fmt.Println(r)
 	// }
 
-	// for _, mapn := range allMaps {
-	// 	mapInputRanges := make([]valRange, 0)
-	// 	for _, mapr := range mapn {
+	maps := allMaps[len(allMaps)-1]
+	// resultRanges := make([]valRange, 0)
 
-	// 	}
-	// }
+	locations := make([]int, 0)
+	for _, m := range maps {
+		for i := m[0]; i < m[0]+m[2]; i++ {
+			locations = append(locations, i)
+		}
+	}
+
+	answer := 0
+
+	answerFound := false
+
+	for _, locMap := range allMaps[len(allMaps)-1] {
+		start := locMap[0]
+		end := locMap[0] + locMap[2] - 1
+
+		for location := start; location <= end; location++ {
+			// println("Location", location)
+			currentSeed := location
+			for i := len(allMaps) - 1; i >= 0; i-- {
+				foundMatch := false
+				for _, m := range allMaps[i] {
+					if currentSeed >= m[0] && currentSeed <= m[0]+(m[2]-1) {
+						currentSeed = m[1] + (currentSeed - m[0])
+						foundMatch = true
+						// println(currentSeed)
+						break
+					}
+				}
+				if i == 0 && foundMatch {
+					for _, rng := range ranges {
+						if currentSeed >= rng.min && currentSeed <= rng.max {
+							answer = location
+							answerFound = true
+							break
+						}
+					}
+				}
+				if answerFound {
+					break
+				}
+			}
+			if answerFound {
+				break
+			}
+		}
+		if answerFound {
+			break
+		}
+	}
 
 	// newRanges := make([]valRange, 0)
-	// for _, mapn := range allMaps[0] {
+	// overlap := getOverlap(ranges, allMaps[0])
+	// fmt.Println(overlap)
 
-	// }
+	println(answer)
 
-	// for i := len(allMaps) - 1; i >= 0; i-- {
-	// 	for j := 0; j < len(allMaps[i]); j++ {
-	// 		min := allMaps[j][0]
-	// 		max := min + (allMaps[j][2] - 1)
-	// 	}
-	// 	min := allMaps[i][0]
-	// 	max := min + (allMaps[i][2] - 1)
-	// 	for j := i - 1; j >= 0; j-- {
+}
 
-	// 	}
-	// }
-
-	// Final transform after file ends
-	// answer := seeds[0]
-
-	// println(answer)
-
+func getOverlap(ranges []valRange, maps [][]int) []valRange {
+	result := make([]valRange, 0)
+	for _, rng := range ranges {
+		for _, m := range maps {
+			mapRange := valRange{m[1], m[1] + (m[2] - 1)}
+			if rng.min >= mapRange.min && rng.max <= mapRange.max {
+				result = append(result, rng)
+			}
+		}
+	}
+	return result
 }
 
 func sortMapSets(mapSet1 []int, mapSet2 []int) int {
