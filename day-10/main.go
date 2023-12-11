@@ -7,11 +7,6 @@ import (
 )
 
 func main() {
-	partOne()
-	partTwo()
-}
-
-func partOne() {
 	f, err := os.Open("input.txt")
 	if err != nil {
 		panic(err)
@@ -19,10 +14,13 @@ func partOne() {
 	defer f.Close()
 
 	pipes := make([]string, 0)
+	pipes2 := make([]string, 0)
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		pipes = append(pipes, scanner.Text())
+		line := scanner.Text()
+		pipes = append(pipes, line)
+		pipes2 = append(pipes2, line)
 	}
 
 	startPos, err := getStartPos(pipes)
@@ -55,24 +53,130 @@ func partOne() {
 		tmpPos := currentPos
 		currentPos = getNextPipe(currentPos, prevPos, pipes)
 		prevPos = tmpPos
+
+		if prevPos.row == currentPos.row-1 {
+			pipes2[prevPos.row] = replaceAtIndex(pipes2[prevPos.row], 'D', prevPos.col)
+		} else if prevPos.row == currentPos.row+1 {
+			pipes2[prevPos.row] = replaceAtIndex(pipes2[prevPos.row], 'U', prevPos.col)
+		} else if prevPos.col == currentPos.col-1 {
+			pipes2[prevPos.row] = replaceAtIndex(pipes2[prevPos.row], 'R', prevPos.col)
+		} else if prevPos.col == currentPos.col+1 {
+			pipes2[prevPos.row] = replaceAtIndex(pipes2[prevPos.row], 'X', prevPos.col)
+		}
 	}
 
 	println(loopLength / 2)
 
+	// Expand graph
+	expandedPipes := make([]string, 0)
+	for _, row := range pipes2 {
+		newRow := ""
+		for i := 0; i < len(row); i++ {
+			newRow = newRow + "Z" + string(row[i])
+		}
+		newRow += "Z"
+		expandedPipes = append(expandedPipes, newRow)
+		emptyRow := ""
+		for i := 0; i < len(newRow); i++ {
+			emptyRow += "Z"
+		}
+		expandedPipes = append(expandedPipes, emptyRow)
+	}
+
+	startPos, err = getStartPos(expandedPipes)
+	if err != nil {
+		panic(err)
+	}
+
+	// Replace S with U. I figured this out by looking at the input after figuring out the loop.
+	expandedPipes[startPos.row] = replaceAtIndex(expandedPipes[startPos.row], 'U', startPos.col)
+	currentPos = startPos
+	// fmt.Println(currentPos)
+	for true {
+		// fmt.Println(currentPos, string(expandedPipes[currentPos.row][currentPos.col]))
+		if expandedPipes[currentPos.row][currentPos.col] == 'U' {
+			expandedPipes[currentPos.row-1] = replaceAtIndex(expandedPipes[currentPos.row-1], 'U', currentPos.col)
+			currentPos = Coord{currentPos.row - 2, currentPos.col}
+		} else if expandedPipes[currentPos.row][currentPos.col] == 'D' {
+			expandedPipes[currentPos.row+1] = replaceAtIndex(expandedPipes[currentPos.row+1], 'D', currentPos.col)
+			currentPos = Coord{currentPos.row + 2, currentPos.col}
+		} else if expandedPipes[currentPos.row][currentPos.col] == 'X' {
+			expandedPipes[currentPos.row] = replaceAtIndex(expandedPipes[currentPos.row], 'X', currentPos.col-1)
+			currentPos = Coord{currentPos.row, currentPos.col - 2}
+		} else if expandedPipes[currentPos.row][currentPos.col] == 'R' {
+			expandedPipes[currentPos.row] = replaceAtIndex(expandedPipes[currentPos.row], 'R', currentPos.col+1)
+			currentPos = Coord{currentPos.row, currentPos.col + 2}
+		}
+
+		if currentPos == startPos {
+			break
+		}
+	}
+
+	floodFill(0, 0, expandedPipes)
+
+	validSpace := make(map[byte]struct{})
+	validSpace['.'] = struct{}{}
+	validSpace['7'] = struct{}{}
+	validSpace['F'] = struct{}{}
+	validSpace['J'] = struct{}{}
+	validSpace['L'] = struct{}{}
+	validSpace['-'] = struct{}{}
+	validSpace['|'] = struct{}{}
+
+	// Count number of valid spaces remaining
+	count := 0
+	for row := 0; row < len(expandedPipes); row++ {
+		for col := 0; col < len(expandedPipes[row]); col++ {
+			_, ok := validSpace[expandedPipes[row][col]]
+			if ok {
+				count++
+			}
+		}
+	}
+	println(count)
 }
 
-func partTwo() {
-	// f, err := os.Open("input.txt")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer f.Close()
+func replaceAtIndex(in string, r rune, i int) string {
+	out := []rune(in)
+	out[i] = r
+	return string(out)
+}
 
-	// scanner := bufio.NewScanner(f)
+func floodFill(row int, col int, pipes []string) {
+	replace := make(map[byte]struct{})
+	replace['Z'] = struct{}{}
+	replace['.'] = struct{}{}
+	replace['7'] = struct{}{}
+	replace['F'] = struct{}{}
+	replace['J'] = struct{}{}
+	replace['L'] = struct{}{}
+	replace['-'] = struct{}{}
+	replace['|'] = struct{}{}
 
-	// for scanner.Scan() {
-	// 	line := scanner.Text()
-	// }
+	floodFillR(row, col, pipes, replace)
+}
+
+func floodFillR(row int, col int, pipes []string, m map[byte]struct{}) {
+	_, exists := m[pipes[row][col]]
+	// println(string(pipes[row][col]), exists)
+	if exists {
+		pipes[row] = replaceAtIndex(pipes[row], '0', col)
+	} else {
+		return
+	}
+	if row > 0 {
+		floodFillR(row-1, col, pipes, m)
+	}
+	if row < len(pipes)-1 {
+		floodFillR(row+1, col, pipes, m)
+	}
+	if col > 0 {
+		floodFillR(row, col-1, pipes, m)
+	}
+	if col < len(pipes[row])-1 {
+		floodFillR(row, col+1, pipes, m)
+	}
 }
 
 func getStartPos(pipes []string) (Coord, error) {
