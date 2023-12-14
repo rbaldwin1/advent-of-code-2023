@@ -161,7 +161,8 @@ func fillString(char string, length int) string {
 func createCacheKey(springs string, groups []int) string {
 	key := springs
 	for _, group := range groups {
-		key += string(group) // I don't know why this works but strconv gives the wrong answer
+		// This might cause the wrong answer to be given. Not adding the groups actually gave the right answer before
+		key += strconv.Itoa(group)
 	}
 	return key
 }
