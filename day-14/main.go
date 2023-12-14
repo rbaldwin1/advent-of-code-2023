@@ -47,11 +47,25 @@ func partTwo() {
 		platform = append(platform, scanner.Text())
 	}
 
-	// cycles := 1000000000
-	cycles := 1000 // 1000 works
+	cycles := 1000000000
+	// cycles := 1000 // 1000 works without finding the loop size
 
-	for i := 0; i < cycles; i++ {
+	states := make(map[string]int)
+
+	loopSize := 0
+	cyclesNeeded := cycles
+	for i := 0; i < loopSize+cyclesNeeded; i++ {
 		platform = cycle(platform)
+		if loopSize == 0 {
+			str := arrayAsString(platform)
+			_, ok := states[str]
+			if !ok {
+				states[str] = 1
+			} else {
+				loopSize = i + 1
+				cyclesNeeded = loopSize - (cycles % loopSize)
+			}
+		}
 	}
 
 	load := calculateLoad(platform)
@@ -145,6 +159,14 @@ func calculateLoad(platform []string) int {
 		}
 	}
 	return load
+}
+
+func arrayAsString(arr []string) string {
+	str := ""
+	for _, s := range arr {
+		str += s
+	}
+	return str
 }
 
 func replaceAtIndex(in string, r rune, i int) string {
