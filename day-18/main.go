@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -68,11 +69,6 @@ func partTwo() {
 	for scanner.Scan() {
 		line := scanner.Text()
 		split := strings.Split(line, " ")
-		// dir := split[0]
-		// dist, err := strconv.Atoi(split[1])
-		// if err != nil {
-		// 	panic(err)
-		// }
 		hex := strings.ReplaceAll(split[2], "(", "")
 		hex = strings.ReplaceAll(hex, ")", "")
 		dist, err := strconv.ParseInt(hex[1:6], 16, 64)
@@ -87,30 +83,49 @@ func partTwo() {
 			break
 		case "1":
 			dir = "D"
+			break
 		case "2":
 			dir = "L"
+			break
 		case "3":
 			dir = "U"
+			break
 		}
 		input = append(input, Input{dir, dist, "#"})
 	}
 
-	grid := createGrid(input)
+	println(calcArea(input))
+}
 
-	count := 0
-	// floodFill(22, 207, grid)
-	// floodFill(1, 2, grid)
-	for i := 0; i < len(grid); i++ {
-		for j := 0; j < len(grid[i]); j++ {
-			if grid[i][j] != "" {
-				count++
-			}
+func calcArea(input []Input) int64 {
+	var x int64 = 0
+	var y int64 = 0
+	coords := []Coord{}
+	for _, in := range input {
+		if in.dir == "R" {
+			x += in.dist
+		} else if in.dir == "L" {
+			x -= in.dist
+		} else if in.dir == "U" {
+			y += in.dist
+		} else if in.dir == "D" {
+			y -= in.dist
 		}
+		coords = append(coords, Coord{x, y})
+		// fmt.Println(in, x, y)
 	}
 
-	// printGrid(grid)
+	var sum1 int64 = 0
+	var sum2 int64 = 0
 
-	println(count)
+	for i := 0; i < len(coords)-1; i++ {
+		sum1 = sum1 + coords[i].x*coords[i+1].y
+		sum2 = sum2 + coords[i].y*coords[i+1].x
+	}
+	sum1 = sum1 + coords[len(coords)-1].x*coords[0].y
+	sum2 = sum2 + coords[0].x*coords[len(coords)-1].y
+
+	return int64(math.Abs(float64(sum1-sum2)) / 2)
 }
 
 func printGrid(grid [][]string) {
@@ -249,4 +264,9 @@ type Input struct {
 	dir   string
 	dist  int64
 	color string
+}
+
+type Coord struct {
+	x int64
+	y int64
 }
